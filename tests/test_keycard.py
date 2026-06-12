@@ -33,7 +33,15 @@ def test_init_calls_command():
         kc = KeyCard(transport)
         kc.card_public_key = b'pub'
         kc.init(b'pin', b'puk', b'secret')
-        mock_init.assert_called_once_with(kc, b'pin', b'puk', b'secret')
+        mock_init.assert_called_once_with(
+            kc,
+            b'pin',
+            b'puk',
+            b'secret',
+            duress_pin=None,
+            pin_limit=None,
+            puk_limit=None,
+        )
 
 
 def test_ident_calls_command():
