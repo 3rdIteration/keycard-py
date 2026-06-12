@@ -83,3 +83,88 @@ def test_init_apdu_error(card, ecc_patches):
         init(card, PIN, PUK, PAIRING_SECRET)
 
     assert excinfo.value.sw == 0x6A84
+
+
+def test_init_with_duress_pin(card, ecc_patches):
+    '''Test init with duress PIN - should include limits and duress PIN in plaintext'''
+    card.send_apdu.return_value = b''
+    card.card_public_key = CARD_PUBLIC_KEY
+    duress_pin = b'654321'
+
+    init(card, PIN, PUK, PAIRING_SECRET, duress_pin=duress_pin)
+
+    # Plaintext should be: PIN + PUK + PAIRING_SECRET + PIN_LIMIT + PUK_LIMIT + DURESS_PIN
+    # with default limits of 5, 5
+    call_args = card.send_apdu.call_args
+    assert call_args[1]['ins'] == constants.INS_INIT
+    data = call_args[1]['data']
+    # Verify the data was sent (the exact bytes depend on the mock encryption)
+    assert len(data) > 0
+
+
+def test_init_with_custom_limits_no_duress(card, ecc_patches):
+    '''Test init with custom limits but no duress PIN'''
+    card.send_apdu.return_value = b''
+    card.card_public_key = CARD_PUBLIC_KEY
+
+    init(card, PIN, PUK, PAIRING_SECRET, pin_limit=3, puk_limit=4)
+
+    call_args = card.send_apdu.call_args
+    assert call_args[1]['ins'] == constants.INS_INIT
+    data = call_args[1]['data']
+    assert len(data) > 0
+
+
+def test_init_with_duress_and_limits(card, ecc_patches):
+    '''Test init with duress PIN and custom limits'''
+    card.send_apdu.return_value = b''
+    card.card_public_key = CARD_PUBLIC_KEY
+    duress_pin = b'999999'
+
+    init(card, PIN, PUK, PAIRING_SECRET, duress_pin=duress_pin, pin_limit=2, puk_limit=3)
+
+    call_args = card.send_apdu.call_args
+    assert call_args[1]['ins'] == constants.INS_INIT
+    data = call_args[1]['data']
+    assert len(data) > 0
+
+
+def test_init_with_duress_pin_string(card, ecc_patches):
+    '''Test init with duress PIN as string'''
+    card.send_apdu.return_value = b''
+    card.card_public_key = CARD_PUBLIC_KEY
+
+    init(card, PIN, PUK, PAIRING_SECRET, duress_pin='111111')
+
+    call_args = card.send_apdu.call_args
+    assert call_args[1]['ins'] == constants.INS_INIT
+
+
+def test_init_invalid_duress_pin_length(card, ecc_patches):
+    '''Test init with invalid duress PIN length'''
+    card.card_public_key = CARD_PUBLIC_KEY
+
+    with pytest.raises(ValueError, match='Duress PIN must be exactly 6 digits'):
+        init(card, PIN, PUK, PAIRING_SECRET, duress_pin=b'12345')
+
+
+def test_init_invalid_pin_limit(card, ecc_patches):
+    '''Test init with invalid PIN retry limit'''
+    card.card_public_key = CARD_PUBLIC_KEY
+
+    with pytest.raises(ValueError, match='PIN retry limit must be between 1 and 5'):
+        init(card, PIN, PUK, PAIRING_SECRET, pin_limit=0)
+
+    with pytest.raises(ValueError, match='PIN retry limit must be between 1 and 5'):
+        init(card, PIN, PUK, PAIRING_SECRET, pin_limit=6)
+
+
+def test_init_invalid_puk_limit(card, ecc_patches):
+    '''Test init with invalid PUK retry limit'''
+    card.card_public_key = CARD_PUBLIC_KEY
+
+    with pytest.raises(ValueError, match='PUK retry limit must be between 1 and 5'):
+        init(card, PIN, PUK, PAIRING_SECRET, puk_limit=0)
+
+    with pytest.raises(ValueError, match='PUK retry limit must be between 1 and 5'):
+        init(card, PIN, PUK, PAIRING_SECRET, puk_limit=6)

@@ -43,6 +43,7 @@ class PinType(IntEnum):
     USER = 0x00
     PUK = 0x01
     PAIRING = 0x02
+    DURESS = 0x03
 
 
 class StorageSlot(IntEnum):
