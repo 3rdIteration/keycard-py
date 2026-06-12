@@ -31,13 +31,16 @@ def init(
         puk (str | bytes): The personal unblocking key (PUK).
         pairing_secret (str | bytes): A 32-byte shared secret or a passphrase that
             will be converted into one.
-        duress_pin (str | bytes | None): Optional duress PIN (6 digits). If provided,
-            pin_limit and puk_limit will be set to their defaults if not specified.
-            Defaults to None (disabled).
-        pin_limit (int | None): Optional retry limit for PIN (1-5). Only used if
-            duress_pin is set or this is explicitly provided. Defaults to 5.
-        puk_limit (int | None): Optional retry limit for PUK (1-5). Only used if
-            duress_pin is set or this is explicitly provided. Defaults to 5.
+        duress_pin (str | bytes | None): Optional duress PIN (6 digits).
+            Requires applet version 3.1 or later, and can only be set during
+            initialization. When omitted, the applet uses the first half of
+            the PUK as the duress PIN. Defaults to None.
+        pin_limit (int | None): Optional retry limit for PIN (2-10). Only
+            sent if duress_pin is set or a limit is explicitly provided.
+            Defaults to the applet default of 3.
+        puk_limit (int | None): Optional retry limit for PUK (3-12). Only
+            sent if duress_pin is set or a limit is explicitly provided.
+            Defaults to the applet default of 5.
 
     Raises:
         NotSelectedError: If no card public key is provided.
@@ -61,20 +64,22 @@ def init(
     if has_duress_pin:
         if not isinstance(duress_pin, bytes):
             duress_pin = duress_pin.encode('ascii')
-        if len(duress_pin) != 6:
+        if len(duress_pin) != 6 or not duress_pin.isdigit():
             raise ValueError("Duress PIN must be exactly 6 digits.")
-    
-    # Set defaults for limits if duress PIN is set
+
+    # Set defaults for limits if duress PIN is set. Bounds and defaults match
+    # the applet (PIN_MIN/MAX_RETRIES = 2/10, PUK_MIN/MAX_RETRIES = 3/12,
+    # defaults 3 and 5); out-of-range values are rejected on-card with 0x6A80.
     if has_duress_pin or has_custom_limits:
         if pin_limit is None:
-            pin_limit = 5
+            pin_limit = 3
         if puk_limit is None:
             puk_limit = 5
-        
-        if not (1 <= pin_limit <= 5):
-            raise ValueError("PIN retry limit must be between 1 and 5.")
-        if not (1 <= puk_limit <= 5):
-            raise ValueError("PUK retry limit must be between 1 and 5.")
+
+        if not (2 <= pin_limit <= 10):
+            raise ValueError("PIN retry limit must be between 2 and 10.")
+        if not (3 <= puk_limit <= 12):
+            raise ValueError("PUK retry limit must be between 3 and 12.")
 
     ephemeral_key = SigningKey.generate(curve=SECP256k1)
     our_pubkey_bytes: bytes = \

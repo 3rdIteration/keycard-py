@@ -128,9 +128,14 @@ class KeyCard(CardInterface):
             pin (str): The PIN code (6 digits).
             puk (str): The PUK code (12 digits).
             pairing_secret (str): The shared secret for pairing.
-            duress_pin (Optional[str]): Optional duress PIN (6 digits). Defaults to None (disabled).
-            pin_limit (Optional[int]): Optional PIN retry limit (1-5). Defaults to 5 if duress_pin is set.
-            puk_limit (Optional[int]): Optional PUK retry limit (1-5). Defaults to 5 if duress_pin is set.
+            duress_pin (Optional[str]): Optional duress PIN (6 digits).
+                Applet v3.1+ only; can only be set during initialization
+                and cannot be changed later. When omitted, the applet uses
+                the first half of the PUK as the duress PIN.
+            pin_limit (Optional[int]): Optional PIN retry limit (2-10).
+                Defaults to 3 if duress_pin is set.
+            puk_limit (Optional[int]): Optional PUK retry limit (3-12).
+                Defaults to 5 if duress_pin is set.
         '''
         commands.init(
             self,

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support Pairing Mode for Keycard version 3.2
+- `init()` now optionally accepts `duress_pin`, `pin_limit` and `puk_limit`
+  (Keycard applet v3.1+ extended INIT payload). The duress PIN can only be
+  set during initialization; when omitted, the applet defaults it to the
+  first half of the PUK.
 
 ### Fixed
 

@@ -43,7 +43,8 @@ class PinType(IntEnum):
     USER = 0x00
     PUK = 0x01
     PAIRING = 0x02
-    DURESS = 0x03
+    # Note: there is no CHANGE PIN P1 for the duress PIN. It can only be set
+    # during INIT and cannot be changed afterwards (applet v3.1+).
 
 
 class StorageSlot(IntEnum):
