@@ -23,8 +23,12 @@ class SignatureResult:
         public_key: Optional[bytes] = None
     ) -> None:
         self.algo = algo
-        self.r = r.to_bytes((r.bit_length() + 7) // 8, 'big')
-        self.s = s.to_bytes((s.bit_length() + 7) // 8, 'big')
+        # Pad to the fixed 32-byte field width. Minimal-length encoding drops a
+        # leading zero byte when r or s is < 2**248 (~0.8% of signatures),
+        # producing a 63-byte `signature` that breaks fixed-length consumers
+        # such as python-ecdsa's sigdecode_string (used in _recover_v).
+        self.r = r.to_bytes(32, 'big')
+        self.s = s.to_bytes(32, 'big')
         if public_key is None and recovery_id is None:
             raise ValueError(
                 "Public key and recovery id not returned from card")
